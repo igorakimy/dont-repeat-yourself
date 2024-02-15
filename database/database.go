@@ -11,12 +11,25 @@ import (
 // Account является клиентом в базе данных
 type Account string
 
+func NewAccount(name string) Account {
+	return Account(name)
+}
+
 // Tx отражает изменение в базе данных
 type Tx struct {
 	From  Account `json:"from"`
 	To    Account `json:"to"`
 	Value uint    `json:"value"`
 	Data  string  `json:"data"`
+}
+
+func NewTx(from, to Account, value uint, data string) Tx {
+	return Tx{
+		from,
+		to,
+		value,
+		data,
+	}
 }
 
 // IsReward проверяет, являются ли данные "вознаграждением",
@@ -36,7 +49,7 @@ type State struct {
 	dbFile *os.File
 }
 
-func NewStateFromDist() (*State, error) {
+func NewStateFromDisk() (*State, error) {
 	// получить текущую директорию
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -131,7 +144,11 @@ func (s *State) apply(tx Tx) error {
 	}
 
 	if tx.Value > s.Balances[tx.From] {
-		return fmt.Errorf("insufficient balance")
+		return fmt.Errorf(
+			"insufficient balance: from %d to %d\n",
+			tx.Value,
+			s.Balances[tx.From],
+		)
 	}
 
 	s.Balances[tx.From] -= tx.Value
@@ -140,14 +157,6 @@ func (s *State) apply(tx Tx) error {
 	return nil
 }
 
-func loadGenesis(filePath string) (*State, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	var state *State
-	_ = json.NewDecoder(f).Decode(state)
-
-	return state, nil
+func (s *State) Close() {
+	_ = s.dbFile.Close()
 }
