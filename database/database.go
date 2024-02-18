@@ -2,11 +2,16 @@ package database
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
+
+// Snapshot является снимком базы данных после совершения каждой транзакции
+type Snapshot [32]byte
 
 // Account является клиентом в базе данных
 type Account string
@@ -46,7 +51,8 @@ type State struct {
 	Balances  map[Account]uint
 	txMemPool []Tx
 
-	dbFile *os.File
+	dbFile   *os.File
+	snapshot Snapshot
 }
 
 func NewStateFromDisk() (*State, error) {
@@ -78,6 +84,7 @@ func NewStateFromDisk() (*State, error) {
 		balances,
 		make([]Tx, 0),
 		dbFile,
+		Snapshot{},
 	}
 
 	// Итерировать по каждой строке файла tx.db
@@ -112,7 +119,7 @@ func (s *State) Add(tx Tx) error {
 }
 
 // Persist сохранение транзакций на диск
-func (s *State) Persist() error {
+func (s *State) Persist() (Snapshot, error) {
 	// Создаем копию memPool, потому что s.txMemPool будет
 	// изменен в цикле ниже
 	memPool := make([]Tx, len(s.txMemPool))
@@ -121,19 +128,26 @@ func (s *State) Persist() error {
 	for i := 0; i < len(memPool); i++ {
 		txJson, err := json.Marshal(memPool[i])
 		if err != nil {
-			return err
+			return Snapshot{}, err
 		}
 
+		fmt.Printf("Сохранение новой транзакции(TX) на диск:\n")
+		fmt.Printf("\t%s\n", txJson)
 		txJson = append(txJson, '\n')
 		if _, err = s.dbFile.Write(txJson); err != nil {
-			return err
+			return Snapshot{}, err
 		}
+
+		if err = s.doSnapshot(); err != nil {
+			return Snapshot{}, nil
+		}
+		fmt.Printf("Новый снимок БД: %x\n", s.snapshot)
 
 		// Удалить TX, записанный в файл из memPool
 		s.txMemPool = s.txMemPool[1:]
 	}
 
-	return nil
+	return s.snapshot, nil
 }
 
 // apply изменение и валидация состояния (пользовательских балансов)
@@ -145,7 +159,7 @@ func (s *State) apply(tx Tx) error {
 
 	if tx.Value > s.Balances[tx.From] {
 		return fmt.Errorf(
-			"insufficient balance: from %d to %d\n",
+			"Недостаточно средств на балансе: нужно %d, есть %d\n",
 			tx.Value,
 			s.Balances[tx.From],
 		)
@@ -153,6 +167,22 @@ func (s *State) apply(tx Tx) error {
 
 	s.Balances[tx.From] -= tx.Value
 	s.Balances[tx.To] += tx.Value
+
+	return nil
+}
+
+func (s *State) doSnapshot() error {
+	// Перечитать весь файл начиная с первого байта
+	_, err := s.dbFile.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	txsData, err := io.ReadAll(s.dbFile)
+	if err != nil {
+		return err
+	}
+	s.snapshot = sha256.Sum256(txsData)
 
 	return nil
 }

@@ -14,7 +14,7 @@ func init() {
 
 var balancesCmd = &cobra.Command{
 	Use:   "balances",
-	Short: "Interact with balances (list...).",
+	Short: "Взаимодействие с балансами (list...).",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return incorrectUsageErr()
 	},
@@ -24,7 +24,7 @@ var balancesCmd = &cobra.Command{
 
 var balancesListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Lists all balances.",
+	Short: "Список всех балансов.",
 	Run: func(cmd *cobra.Command, args []string) {
 		state, err := database.NewStateFromDisk()
 		if err != nil {
@@ -33,7 +33,7 @@ var balancesListCmd = &cobra.Command{
 		}
 		defer state.Close()
 
-		fmt.Println("Accounts balances:")
+		fmt.Println("Балансы на аккаунтах")
 		fmt.Println("__________________")
 		for account, balance := range state.Balances {
 			fmt.Println(fmt.Sprintf("%s: %d", account, balance))

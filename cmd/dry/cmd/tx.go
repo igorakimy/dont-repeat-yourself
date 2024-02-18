@@ -15,16 +15,16 @@ const (
 )
 
 func init() {
-	txAddCmd.Flags().String(flagFrom, "", "From what account to send tokens")
+	txAddCmd.Flags().String(flagFrom, "", "С какого аккаунта отправить токены")
 	_ = txAddCmd.MarkFlagRequired(flagFrom)
 
-	txAddCmd.Flags().String(flagTo, "", "To what account to send tokens")
+	txAddCmd.Flags().String(flagTo, "", "На какой аккаунт отправить токены")
 	_ = txAddCmd.MarkFlagRequired(flagTo)
 
-	txAddCmd.Flags().Uint(flagValue, 0, "How many tokens to send")
+	txAddCmd.Flags().Uint(flagValue, 0, "Сколько токенов отправить")
 	_ = txAddCmd.MarkFlagRequired(flagValue)
 
-	txAddCmd.Flags().String(flagData, "", "Possible values: 'reward'")
+	txAddCmd.Flags().String(flagData, "", "Допустимые значения: 'reward'")
 
 	txsCmd.AddCommand(txAddCmd)
 
@@ -33,7 +33,7 @@ func init() {
 
 var txsCmd = &cobra.Command{
 	Use:   "tx",
-	Short: "Interact with txs (add...)",
+	Short: "Взаимодействие с транзакциями (add...)",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return incorrectUsageErr()
 	},
@@ -43,7 +43,7 @@ var txsCmd = &cobra.Command{
 
 var txAddCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Adds new TX to database.",
+	Short: "Добавление новой транзакции(TX) в базу данных.",
 	Run: func(cmd *cobra.Command, args []string) {
 		from, _ := cmd.Flags().GetString(flagFrom)
 		to, _ := cmd.Flags().GetString(flagTo)
@@ -71,11 +71,12 @@ var txAddCmd = &cobra.Command{
 		}
 
 		// Сбросить данные из пула в памяти на диск
-		if err := state.Persist(); err != nil {
+		_, err = state.Persist()
+		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 
-		fmt.Println("TX successfully added to the ledger...")
+		fmt.Println("Транзакция(TX) успешно добавлена в реестр.")
 	},
 }

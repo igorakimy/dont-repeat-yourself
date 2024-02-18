@@ -8,7 +8,7 @@ import (
 const Major = "0"
 const Minor = "1"
 const Fix = "0"
-const Verbal = "TX Add && Balances List"
+const Verbal = "Добавление транзакций && Список балансов"
 
 func init() {
 	dryCmd.AddCommand(versionCmd)
@@ -16,8 +16,8 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Describes version.",
+	Short: "Описание версии.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Version: %s.%s.%s-beta %s\n", Major, Minor, Fix, Verbal)
+		fmt.Printf("Версия: %s.%s.%s-beta %s\n", Major, Minor, Fix, Verbal)
 	},
 }
